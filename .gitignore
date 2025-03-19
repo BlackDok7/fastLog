@@ -2,3 +2,4 @@ logfile.txt
 *.o 
 *.out 
 *.log
+.vscode/
