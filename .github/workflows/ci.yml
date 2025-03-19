@@ -1,0 +1,58 @@
+name: CI - Build and Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Build & Test on Ubuntu
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y build-essential
+
+      - name: Build the project
+        run: make
+
+      - name: Run Example Program
+        run: ./example || true
+
+      - name: Run Static Analysis (clang-tidy)
+        run: sudo apt install -y clang-tidy && clang-tidy src/*.c -- -Iinclude
+
+  cross-compile:
+    name: Test Cross-Compilation for Embedded Linux
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install cross-compiler
+        run: sudo apt install -y gcc-arm-linux-gnueabi
+
+      - name: Cross-Compile for ARM
+        run: make CC=arm-linux-gnueabi-gcc
+
+  code-style:
+    name: Enforce Code Formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install clang-format
+        run: sudo apt install -y clang-format
+
+      - name: Check Formatting
+        run: clang-format -i src/*.c include/*.h && git diff --exit-code || (echo "Code formatting issues found" && exit 1)
