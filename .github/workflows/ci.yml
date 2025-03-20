@@ -24,7 +24,7 @@ jobs:
         run: make
 
       - name: Run Example Program
-        run: ./example || true
+        run: ./example_app
 
       - name: Run Static Analysis (clang-tidy)
         run: sudo apt install -y clang-tidy && clang-tidy src/*.c -- -Iinclude
