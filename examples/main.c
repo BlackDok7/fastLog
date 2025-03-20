@@ -2,6 +2,7 @@
 
 int main() {
     set_log_level(LOG_LEVEL_DEBUG);
+    set_log_backend(LOG_BACKEND_STDOUT, NULL);
     set_log_backend(LOG_BACKEND_FILE, "logfile.txt");
 
     log_message(LOG_LEVEL_INFO, "System initialized.");
