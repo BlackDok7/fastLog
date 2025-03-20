@@ -1,6 +1,15 @@
 #include "fastlog.h"
+#include <pthread.h>
 #include <stdio.h>
 #include <unistd.h>  // For sleep
+
+void* log_thread(void* arg) {
+    for (int i = 0; i < 5; i++) {
+        log_message(LOG_LEVEL_INFO, "Thread %d: Log message %d", (int)arg, i);
+        usleep(50000);  // Simulate work
+    }
+    return NULL;
+}
 
 int main() {
     set_log_level(LOG_LEVEL_INFO);
@@ -8,15 +17,15 @@ int main() {
     // Enable logging to multiple backends
     set_log_backend(LOG_BACKEND_STDOUT, NULL);
     set_log_backend(LOG_BACKEND_FILE, "logfile.txt");
-    set_log_backend(LOG_BACKEND_UDP, "192.168.1.10");  // UDP logging
 
-    log_message(LOG_LEVEL_INFO, "System initialized.");
-    log_message(LOG_LEVEL_DEBUG, "Debugging mode enabled.");
-    log_message(LOG_LEVEL_ERROR, "Critical error encountered!");
+    // Create threads for concurrent logging
+    pthread_t t1, t2;
+    pthread_create(&t1, NULL, log_thread, (void*)1);
+    pthread_create(&t2, NULL, log_thread, (void*)2);
 
-    // Flush logs and prevent premature exit
-    fflush(stdout);
-    sleep(1);
+    // Wait for threads to finish
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
 
     return 0;
 }

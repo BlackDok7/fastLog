@@ -7,11 +7,15 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <netinet/in.h>  // Add this for sockaddr_in
-#include <arpa/inet.h>   // Add this for inet_addr
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <pthread.h>  // For thread safety (mutex)
 
 #define MAX_LOG_SIZE 1048576  // 1MB max log file size before rotation
 #define MAX_BACKENDS 3        // Allow up to 3 simultaneous log backends
+
+// Global mutex for thread-safe logging
+static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static log_backend_t active_backends[MAX_BACKENDS];
 static int backend_count = 0;
@@ -22,9 +26,15 @@ static char log_filename[256] = "logfile.txt";
 static int udp_socket = -1;
 static struct sockaddr_in udp_addr;
 
+#ifdef ENABLE_LOG_ROTATION
 // Rotate log file if it exceeds the maximum allowed size
 void rotate_log_file() {
-    if (!log_file) return;
+    pthread_mutex_lock(&log_mutex);  // Ensure thread safety
+
+    if (!log_file) {
+        pthread_mutex_unlock(&log_mutex);
+        return;
+    }
 
     fclose(log_file);
 
@@ -33,11 +43,9 @@ void rotate_log_file() {
     rename(log_filename, backup_filename);
 
     log_file = fopen(log_filename, "w");
-}
 
-#ifdef ENABLE_LOG_ROTATION
-void check_log_size();
-#endif
+    pthread_mutex_unlock(&log_mutex);
+}
 
 // Check log file size and rotate if necessary
 void check_log_size() {
@@ -46,9 +54,12 @@ void check_log_size() {
         rotate_log_file();
     }
 }
+#endif
 
 // Add a logging backend (up to `MAX_BACKENDS` can be used simultaneously)
 void set_log_backend(log_backend_t backend, const char *param) {
+    pthread_mutex_lock(&log_mutex);  // Ensure thread safety
+
     if (backend_count < MAX_BACKENDS) {
         active_backends[backend_count] = backend;
         backend_count++;
@@ -68,10 +79,14 @@ void set_log_backend(log_backend_t backend, const char *param) {
         udp_addr.sin_port = htons(514);
         udp_addr.sin_addr.s_addr = inet_addr(param);
     }
+
+    pthread_mutex_unlock(&log_mutex);
 }
 
 // Write log messages to all active backends
 void log_backend_write(const char *log_entry) {
+    pthread_mutex_lock(&log_mutex);  // Lock before writing
+
     #ifdef ENABLE_LOG_ROTATION
     check_log_size();
     #endif
@@ -102,4 +117,6 @@ void log_backend_write(const char *log_entry) {
                 break;
         }
     }
+
+    pthread_mutex_unlock(&log_mutex);  // Unlock after writing
 }
