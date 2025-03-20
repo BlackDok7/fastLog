@@ -112,6 +112,9 @@ void log_backend_write(const char *log_entry) {
                            (struct sockaddr *)&udp_addr, sizeof(udp_addr));
                 }
                 break;
+            case LOG_BACKEND_JOURNALD:
+                sd_journal_print(LOG_INFO, "%s", log_entry);  // Send log to Systemd Journal
+                break;
             case LOG_BACKEND_UART:
                 // UART logging implementation (future feature)
                 break;

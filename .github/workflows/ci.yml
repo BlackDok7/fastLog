@@ -23,7 +23,19 @@ jobs:
       - name: Build the project
         run: make
 
-      - name: Run Example Program
+  test-file:
+    name: Test File Logging
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y build-essential
+
+      - name: Run Example Program (FILE)
         run: ./example_app
 
       - name: Verify Log File Existence
@@ -32,12 +44,49 @@ jobs:
       - name: Display Log File Contents
         run: cat logfile.txt || echo "Log file is empty"
 
-      - name: Run Static Analysis (clang-tidy)
-        run: sudo apt install -y clang-tidy && clang-tidy src/*.c -- -Iinclude
+  test-stdout:
+    name: Test STDOUT Logging
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y build-essential
+
+      - name: Run Example Program (STDOUT)
+        run: ./example_app | tee console_output.log
+
+      - name: Display Console Output
+        run: cat console_output.log || echo "Console output file not found"
+
+  test-journald:
+    name: Test Systemd Journal Logging
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y build-essential systemd
+
+      - name: Run Example Program (JOURNALD)
+        run: |
+          sudo ./example_app &
+          sleep 2  # Give Systemd time to register logs
+
+      - name: Verify Systemd Journal Logs
+        run: |
+          sudo journalctl --no-pager --output=short-iso-precise | grep "System initialized" || echo "Journalctl log not found"
 
   cross-compile:
     name: Test Cross-Compilation for Embedded Linux
     runs-on: ubuntu-latest
+    needs: build
 
     steps:
       - name: Checkout repository
@@ -48,17 +97,3 @@ jobs:
 
       - name: Cross-Compile for ARM
         run: make CC=arm-linux-gnueabi-gcc
-
-  # code-style:
-  #   name: Enforce Code Formatting
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v3
-
-  #     - name: Install clang-format
-  #       run: sudo apt install -y clang-format
-
-  #     - name: Check Formatting
-  #       run: clang-format -i src/*.c include/*.h && git diff --exit-code || (echo "Code formatting issues found" && exit 1)

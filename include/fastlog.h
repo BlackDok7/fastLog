@@ -19,7 +19,8 @@ typedef enum {
     LOG_BACKEND_SYSLOG,
     LOG_BACKEND_FILE,
     LOG_BACKEND_UDP,
-    LOG_BACKEND_UART
+    LOG_BACKEND_UART,
+    LOG_BACKEND_JOURNALD
 } log_backend_t;
 
 // Logging API
