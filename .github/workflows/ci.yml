@@ -26,6 +26,12 @@ jobs:
       - name: Run Example Program
         run: ./example_app
 
+      - name: Verify Log File Existence
+        run: ls -lah logfile.txt || echo "Log file not found"
+
+      - name: Display Log File Contents
+        run: cat logfile.txt || echo "Log file is empty"
+
       - name: Run Static Analysis (clang-tidy)
         run: sudo apt install -y clang-tidy && clang-tidy src/*.c -- -Iinclude
 
