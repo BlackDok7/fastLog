@@ -7,7 +7,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <netinet/in.h>
+#include <netinet/in.h>  // Add this for sockaddr_in
+#include <arpa/inet.h>   // Add this for inet_addr
 
 #define MAX_LOG_SIZE 1048576  // 1MB max log file size before rotation
 #define MAX_BACKENDS 3        // Allow up to 3 simultaneous log backends
@@ -33,6 +34,10 @@ void rotate_log_file() {
 
     log_file = fopen(log_filename, "w");
 }
+
+#ifdef ENABLE_LOG_ROTATION
+void check_log_size();
+#endif
 
 // Check log file size and rotate if necessary
 void check_log_size() {

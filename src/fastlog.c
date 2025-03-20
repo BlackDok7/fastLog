@@ -18,7 +18,12 @@ void log_message(log_level_t level, const char *format, ...) {
 
     va_list args;
     va_start(args, format);
-    vsnprintf(log_entry, MAX_LOG_MESSAGE, format, args);
+    #ifdef __STDC_LIB_EXT1__
+        vsnprintf_s(log_entry, MAX_LOG_MESSAGE, MAX_LOG_MESSAGE - 1, format, args);
+    #else
+        vsnprintf(log_entry, MAX_LOG_MESSAGE - 1, format, args);
+    #endif
+
     va_end(args);
 
     log_backend_write(log_entry);
