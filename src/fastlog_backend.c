@@ -7,13 +7,21 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <netinet/in.h>
 
 #define MAX_LOG_SIZE 1048576  // 1MB max log file size before rotation
+#define MAX_BACKENDS 3        // Allow up to 3 simultaneous log backends
 
-log_backend_t global_log_backend = LOG_BACKEND_STDOUT;
+static log_backend_t active_backends[MAX_BACKENDS];
+static int backend_count = 0;
+
 static FILE *log_file = NULL;
 static char log_filename[256] = "logfile.txt";
 
+static int udp_socket = -1;
+static struct sockaddr_in udp_addr;
+
+// Rotate log file if it exceeds the maximum allowed size
 void rotate_log_file() {
     if (!log_file) return;
 
@@ -26,6 +34,7 @@ void rotate_log_file() {
     log_file = fopen(log_filename, "w");
 }
 
+// Check log file size and rotate if necessary
 void check_log_size() {
     struct stat st;
     if (stat(log_filename, &st) == 0 && st.st_size > MAX_LOG_SIZE) {
@@ -33,46 +42,59 @@ void check_log_size() {
     }
 }
 
+// Add a logging backend (up to `MAX_BACKENDS` can be used simultaneously)
 void set_log_backend(log_backend_t backend, const char *param) {
-    global_log_backend = backend;
-    
+    if (backend_count < MAX_BACKENDS) {
+        active_backends[backend_count] = backend;
+        backend_count++;
+    }
+
+    // File backend setup
     if (backend == LOG_BACKEND_FILE && param) {
         strncpy(log_filename, param, sizeof(log_filename) - 1);
         log_file = fopen(log_filename, "a");
     }
+
+    // UDP backend setup
+    if (backend == LOG_BACKEND_UDP && param) {
+        if (udp_socket != -1) close(udp_socket);
+        udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
+        udp_addr.sin_family = AF_INET;
+        udp_addr.sin_port = htons(514);
+        udp_addr.sin_addr.s_addr = inet_addr(param);
+    }
 }
 
-#ifdef ENABLE_LOG_ROTATION
-void check_log_size();
-#endif
-
+// Write log messages to all active backends
 void log_backend_write(const char *log_entry) {
     #ifdef ENABLE_LOG_ROTATION
     check_log_size();
     #endif
 
-    switch (global_log_backend) {
-        case LOG_BACKEND_STDOUT:
-            printf("%s\n", log_entry);
-            break;
-        case LOG_BACKEND_SYSLOG:
-            syslog(LOG_INFO, "%s", log_entry);
-            break;
-        case LOG_BACKEND_FILE:
-            if (log_file) {
-                fprintf(log_file, "%s\n", log_entry);
-                fflush(log_file);
-            }
-            break;
-        #ifdef ENABLE_UDP_BACKEND
-        case LOG_BACKEND_UDP:
-            // UDP logging implementation
-            break;
-        #endif
-        #ifdef ENABLE_UART_BACKEND
-        case LOG_BACKEND_UART:
-            // UART logging implementation
-            break;
-        #endif
+    for (int i = 0; i < backend_count; i++) {
+        switch (active_backends[i]) {
+            case LOG_BACKEND_STDOUT:
+                printf("%s\n", log_entry);
+                fflush(stdout);
+                break;
+            case LOG_BACKEND_SYSLOG:
+                syslog(LOG_INFO, "%s", log_entry);
+                break;
+            case LOG_BACKEND_FILE:
+                if (log_file) {
+                    fprintf(log_file, "%s\n", log_entry);
+                    fflush(log_file);
+                }
+                break;
+            case LOG_BACKEND_UDP:
+                if (udp_socket != -1) {
+                    sendto(udp_socket, log_entry, strlen(log_entry), 0, 
+                           (struct sockaddr *)&udp_addr, sizeof(udp_addr));
+                }
+                break;
+            case LOG_BACKEND_UART:
+                // UART logging implementation (future feature)
+                break;
+        }
     }
 }

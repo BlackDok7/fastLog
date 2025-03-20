@@ -3,19 +3,20 @@
 #include <unistd.h>  // For sleep
 
 int main() {
-    set_log_level(LOG_LEVEL_DEBUG);
+    set_log_level(LOG_LEVEL_INFO);
 
-    // Log to both file and console
+    // Enable logging to multiple backends
     set_log_backend(LOG_BACKEND_STDOUT, NULL);
-    //set_log_backend(LOG_BACKEND_FILE, "logfile.txt");
+    set_log_backend(LOG_BACKEND_FILE, "logfile.txt");
+    set_log_backend(LOG_BACKEND_UDP, "192.168.1.10");  // UDP logging
 
     log_message(LOG_LEVEL_INFO, "System initialized.");
     log_message(LOG_LEVEL_DEBUG, "Debugging mode enabled.");
-    log_message(LOG_LEVEL_ERROR, "Critical error encountered.");
+    log_message(LOG_LEVEL_ERROR, "Critical error encountered!");
 
-    // Force flush logs and prevent premature exit
+    // Flush logs and prevent premature exit
     fflush(stdout);
-    sleep(1);  // Wait for logs to be written
+    sleep(1);
 
     return 0;
 }
