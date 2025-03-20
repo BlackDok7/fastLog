@@ -1,5 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -O2
+LDFLAGS = -lsystemd  # Link against libsystemd
 
 SRCDIR = src
 INCDIR = include

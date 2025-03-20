@@ -4,8 +4,9 @@
 #include <unistd.h>  // For sleep
 
 void* log_thread(void* arg) {
+    int thread_id = *(int*)arg;  // Correct way to cast
     for (int i = 0; i < 5; i++) {
-        log_message(LOG_LEVEL_INFO, "Thread %d: Log message %d", (int)arg, i);
+        log_message(LOG_LEVEL_INFO, "Thread %d: Log message %d", thread_id, i);
         usleep(50000);  // Simulate work
     }
     return NULL;

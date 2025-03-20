@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>  // For thread safety (mutex)
+#include <systemd/sd-journal.h>  // Required for sd_journal_print()
 
 #define MAX_LOG_SIZE 1048576  // 1MB max log file size before rotation
 #define MAX_BACKENDS 3        // Allow up to 3 simultaneous log backends
