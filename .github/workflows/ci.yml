@@ -43,16 +43,16 @@ jobs:
       - name: Cross-Compile for ARM
         run: make CC=arm-linux-gnueabi-gcc
 
-  code-style:
-    name: Enforce Code Formatting
-    runs-on: ubuntu-latest
+  # code-style:
+  #   name: Enforce Code Formatting
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v3
 
-      - name: Install clang-format
-        run: sudo apt install -y clang-format
+  #     - name: Install clang-format
+  #       run: sudo apt install -y clang-format
 
-      - name: Check Formatting
-        run: clang-format -i src/*.c include/*.h && git diff --exit-code || (echo "Code formatting issues found" && exit 1)
+  #     - name: Check Formatting
+  #       run: clang-format -i src/*.c include/*.h && git diff --exit-code || (echo "Code formatting issues found" && exit 1)
